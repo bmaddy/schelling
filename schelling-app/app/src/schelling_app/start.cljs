@@ -8,6 +8,12 @@
 
 ;; In this namespace, the application is built and started.
 
+(defn delta-logger [renderer]
+  (fn [deltas input-queue]
+    (doseq [d deltas]
+      (.log js/console (str "delta: " (pr-str d))))
+    (renderer deltas input-queue)))
+
 (defn create-app [render-config]
   (let [;; Build the application described in the map
         ;; 'behavior/example-app'. The application is a record which
@@ -25,6 +31,7 @@
         ;; render-config which is used to map renderering data to
         ;; specific functions.
         render-fn (push-render/renderer "content" render-config)
+        render-fn (delta-logger render-fn)
         ;; This application does not yet have services, but if it did,
         ;; this would be a good place to create it.
         ;; services-fn (fn [message input-queue] ...)

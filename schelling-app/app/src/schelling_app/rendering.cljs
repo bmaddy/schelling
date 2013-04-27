@@ -1,7 +1,9 @@
 (ns schelling-app.rendering
   (:require [domina :as dom]
             [io.pedestal.app.render.push :as render]
+            [io.pedestal.app.render.events :as events]
             [io.pedestal.app.render.push.templates :as templates]
+            [io.pedestal.app.messages :as msg]
             [io.pedestal.app.render.push.handlers.automatic :as d])
   (:require-macros [schelling-app.html-templates :as html-templates]))
 
@@ -41,7 +43,13 @@
     ;; Call the `html` function, passing the initial values for the
     ;; template. This returns an HTML string which is then added to
     ;; the DOM using Domina.
-    (dom/append! (dom/by-id parent) (html {:id id :message ""}))))
+    (dom/append! (dom/by-id parent) (html {:id id :message "" :count "from render-page"}))
+    ;(events/send-on-click (dom/by-id "add-counter") transmitter :example-transform :messages)))
+    (events/send-on-click (dom/by-id "add-counter")
+                          transmitter
+                          :example-transform
+                          ;[[:value [:io.pedestal.app/view-example-transform]"foo"]])))
+                          [{msg/topic :example-transform msg/type :change :value "foo"}])))
 
 (defn render-message [renderer [_ path _ new-value] transmitter]
   ;; This function responds to a :value event. It uses the

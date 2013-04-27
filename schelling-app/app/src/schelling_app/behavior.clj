@@ -13,10 +13,16 @@
 (defn example-transform [transform-state message]
   (condp = (msg/type message)
     msg/init (:value message)
+    :change (:value message)
     transform-state))
 
+(defn message-logger [transform-fn]
+  (fn [transform-state message]
+    (.log js/console (str "message: " transform-state ": " (pr-str message)))
+    (transform-fn transform-state message)))
+
 (def example-app
-  {:transform {:example-transform {:init "Hello World!" :fn example-transform}}})
+  {:transform {:example-transform {:init "Hello World!" :fn (message-logger example-transform)}}})
 
 
 ;; Once this behavior works, run the Data UI and record
