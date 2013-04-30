@@ -22,11 +22,33 @@
         <![endif]-->
 
   </head>
-
+  
   <body>
-
+    
     <div class="container">
-
+    
+      <div class="row">
+        <div class="span6">
+          <form class="form-inline">
+            <div>
+              <label class="control-label" for="population">Population (1-2500)</label>
+              <input class="input-mini" type="text" id="population" name="population" value="1500"/>
+            </div>
+            <div>
+              Each resident wants <input type="text" class="input-mini" id="threshold" name="threshold" value="30"/> percent of their neighbors to be similar to them, otherwise they'll move.
+            </div>
+            <div>
+              <button id="setup" class="btn">Setup</button>
+            </div>
+          </form>
+          
+          <form class="form-inline">
+            <button class="btn" id="step">Step</button>
+            <button class="btn" id="run">Run</button>
+          </form>
+        </div>
+      </div>
+      
       <div id="content"></div>
 
       <div id="options"></div>

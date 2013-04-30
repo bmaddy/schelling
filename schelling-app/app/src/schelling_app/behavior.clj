@@ -21,8 +21,15 @@
     (.log js/console (str "message: " transform-state ": " (pr-str message)))
     (transform-fn transform-state message)))
 
+(defn schelling-transform [transform-state messate]
+  (condp = (msg/type message)
+    :setup (assoc (:value message) :neighborhood :fixme)
+    :step :fixme
+    transform-state))
+
 (def example-app
-  {:transform {:example-transform {:init "Hello World!" :fn (message-logger example-transform)}}})
+  {:transform {:example-transform {:init "Hello World!" :fn (message-logger example-transform)}
+               :schelling-state {:init "foo" :fn (message-logger schelling-transform)}}})
 
 
 ;; Once this behavior works, run the Data UI and record

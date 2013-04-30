@@ -44,7 +44,18 @@
     ;; template. This returns an HTML string which is then added to
     ;; the DOM using Domina.
     (dom/append! (dom/by-id parent) (html {:id id :message "" :count "from render-page"}))
-    ;(events/send-on-click (dom/by-id "add-counter") transmitter :example-transform :messages)))
+    
+    (events/send-on :click
+                    (dom/by-id "setup")
+                    transmitter
+                    (fn [] 
+                      (let [population (aget (dom/by-id "population") "value")
+                            threshold (aget (dom/by-id "threshold") "value")]
+                             (msg/fill :schelling-state
+                                       [{msg/topic :schelling-state
+                                         msg/type :setup
+                                         :value {:population population :threshold threshold}}]))))
+    
     (events/send-on-click (dom/by-id "add-counter")
                           transmitter
                           :example-transform
