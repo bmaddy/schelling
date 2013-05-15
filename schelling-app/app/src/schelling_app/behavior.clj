@@ -1,6 +1,7 @@
 (ns ^:shared schelling-app.behavior
     (:require [clojure.string :as string]
-              [io.pedestal.app.messages :as msg]))
+              [io.pedestal.app.messages :as msg]
+              [schelling-app.model :as s]))
 
 ;; While creating new behavior, write tests to confirm that it is
 ;; correct. For examples of various kinds of tests, see
@@ -21,15 +22,19 @@
     (.log js/console (str "message: " transform-state ": " (pr-str message)))
     (transform-fn transform-state message)))
 
-(defn schelling-transform [transform-state messate]
+(defn schelling-transform [transform-state {value :value :as message}]
   (condp = (msg/type message)
-    :setup (assoc (:value message) :neighborhood :fixme)
-    :step :fixme
+    :setup (try (s/setup value))
+             ; (catch js/Object e
+             ;   (.dir js/console e)
+             ;   (js/alert (str "Setup Error: " (aget e "message")))))
+    :step (s/step transform-state)
     transform-state))
 
 (def example-app
   {:transform {:example-transform {:init "Hello World!" :fn (message-logger example-transform)}
-               :schelling-state {:init "foo" :fn (message-logger schelling-transform)}}})
+               ; :schelling-state {:init "foo" :fn (message-logger schelling-transform)}}})
+               :schelling-state {:init "foo" :fn schelling-transform}}})
 
 
 ;; Once this behavior works, run the Data UI and record
@@ -48,41 +53,41 @@
 
 
 (comment
-  
+
   ;; The examples below show the signature of each type of function
   ;; that is used to build a behavior dataflow.
-  
+
   ;; transform
-  
+
   (defn example-transform [transform-state message]
     ;; returns new state
     )
-  
+
   ;; effect
-  
+
   (defn example-effect [message old-transform-state new-transform-state]
     ;; returns vector of messages to be added to input queue for future processing
     )
-  
+
   ;; combine
-  
+
   (defn example-combine-1 [combine-state input-name old-transform-state new-transform-state]
     ;; returns new combine state
     )
-  
+
   (defn example-combine-2 [combine-state inputs]
     ;; inputs are a map of input names to their old and new state
     ;; returns new combine state
     )
-  
+
   ;; continue
-  
+
   (defn example-continue [combine-name old-combine-state new-combine-state]
     ;; returns vector of messages to be processed as part of current data flow execution
     )
-  
+
   ;; emit
-  
+
   (defn example-emit
     ([input]
        ;; input is a map of input names to their old and new state
@@ -93,9 +98,9 @@
        ;; changed-input is a set of the input names which have changed
        ;; called when inputs are updated - returns rendering data
        ))
-  
+
   ;; example dataflow map
-  
+
   {:transform {:example-transform {:init "" :fn example-transform}}
    :effect {:example-transform example-effect}
    :combine {:example-combine {:fn example-combine-1 :input #{:example-transform}}}
@@ -103,5 +108,5 @@
    :emit {:example-emit {:fn example-emit :input #{:example-combine}}}
    :focus {:home [[:a-path]]
                 :default :home}}
-  
+
   )

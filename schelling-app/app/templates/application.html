@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>schelling-app</title>
-    
+
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
     <!--[if lt IE 9]>
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -15,40 +15,44 @@
     <link href="/stylesheets/bootstrap.css" rel="stylesheet">
     <link href="/stylesheets/pedestal.css" rel="stylesheet">
     <link href="/schelling-app.css" rel="stylesheet">
-    
+
     <!-- Add xpath support to IE. Domina needs this -->
     <!--[if IE]>
         <script type="text/javascript" src="js/xpath.js"></script>
         <![endif]-->
 
   </head>
-  
+
   <body>
-    
+
     <div class="container">
-    
+
       <div class="row">
         <div class="span6">
-          <form class="form-inline">
+          <form class="form-inline well">
             <div>
               <label class="control-label" for="population">Population (1-2500)</label>
               <input class="input-mini" type="text" id="population" name="population" value="1500"/>
             </div>
             <div>
-              Each resident wants <input type="text" class="input-mini" id="threshold" name="threshold" value="30"/> percent of their neighbors to be similar to them, otherwise they'll move.
+              Each resident wants at least <input type="text" class="input-mini" id="threshold" name="threshold" value="30"/> percent of their neighbors to be similar to them, otherwise they'll move.
             </div>
             <div>
-              <button id="setup" class="btn">Setup</button>
+              <button id="setup" class="btn disabled">Setup</button>
             </div>
           </form>
-          
-          <form class="form-inline">
-            <button class="btn" id="step">Step</button>
-            <button class="btn" id="run">Run</button>
+
+          <form class="form-inline well">
+            <button class="btn disabled" id="step">Step</button>
+            <button class="btn disabled" id="run">Run</button>
           </form>
         </div>
+
+        <div class="span6">
+          <canvas id="neighborhood" width="450" height="450"></canvas>
+        </div>
       </div>
-      
+
       <div id="content"></div>
 
       <div id="options"></div>

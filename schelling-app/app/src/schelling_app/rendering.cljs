@@ -44,29 +44,66 @@
     ;; template. This returns an HTML string which is then added to
     ;; the DOM using Domina.
     (dom/append! (dom/by-id parent) (html {:id id :message "" :count "from render-page"}))
-    
+
+    ; setup button
     (events/send-on :click
                     (dom/by-id "setup")
                     transmitter
-                    (fn [] 
+                    (fn []
+                      ; enable our buttons
+                      (dom/remove-class! (dom/by-id "step") "disabled")
+                      (dom/remove-class! (dom/by-id "run") "disabled")
                       (let [population (aget (dom/by-id "population") "value")
                             threshold (aget (dom/by-id "threshold") "value")]
                              (msg/fill :schelling-state
                                        [{msg/topic :schelling-state
                                          msg/type :setup
-                                         :value {:population population :threshold threshold}}]))))
-    
+                                         :value {:population (js/parseInt population) :threshold (js/parseInt threshold)}}]))))
+
+    ;step button
+    (events/send-on-click (dom/by-id "step")
+                          transmitter
+                          :schelling-state
+                          [{msg/topic :schelling-state msg/type :step}])
+
     (events/send-on-click (dom/by-id "add-counter")
                           transmitter
                           :example-transform
-                          ;[[:value [:io.pedestal.app/view-example-transform]"foo"]])))
-                          [{msg/topic :example-transform msg/type :change :value "foo"}])))
+                          [{msg/topic :example-transform msg/type :change :value "foo"}])
+
+    ; enable the setup buttons
+    (dom/remove-class! (dom/by-id "setup") "disabled")))
 
 (defn render-message [renderer [_ path _ new-value] transmitter]
   ;; This function responds to a :value event. It uses the
   ;; `update-t` function to update the template at `path` with the new
   ;; values in the passed map.
   (templates/update-t renderer path {:message new-value}))
+
+(defn rgb-str [a]
+  (str "rgb("
+       (if (nil? a)
+         "255,255,255"
+         (["0,200,0"
+           "0,0,200"
+           "200,0,0"] a))
+       ")"))
+
+(defn render-neighborhood [renderer [_ path _ new-value] transmitter]
+  (let [canvas (dom/by-id "neighborhood")
+        ctx (.getContext canvas "2d")
+        w (aget canvas "width")
+        h (aget canvas "height")
+        {:keys [width height neighborhood]} new-value]
+    (.save ctx)
+    (.scale ctx (/ w width) (/ h height))
+    (doseq [x (range width)
+            y (range height)
+            :let [n (+ x (* y width))]]
+      ; (aset ctx "fillStyle" (rgb-str (nth neighborhood n)))
+      (aset ctx "fillStyle" (rgb-str (neighborhood [x y])))
+      (.fillRect ctx x y 1 1))
+    (.restore ctx)))
 
 ;; The data structure below is used to map rendering data to functions
 ;; which handle rendering for that specific change. This function is
@@ -87,7 +124,8 @@
    [:node-destroy   [:io.pedestal.app/view-example-transform] d/default-exit]
    ;; All :value deltas for this path will be handled by the
    ;; function `render-message`.
-   [:value [:io.pedestal.app/view-example-transform] render-message]])
+   [:value [:io.pedestal.app/view-example-transform] render-message]
+   [:value [:io.pedestal.app/view-schelling-state] render-neighborhood]])
 
 ;; In render-config, paths can use wildcard keywords :* and :**. :*
 ;; means exactly one segment with any value. :** means 0 or more

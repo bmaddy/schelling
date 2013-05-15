@@ -14,6 +14,6 @@
   ;; The last argument to 'dtfn' is a set of fields that should be
   ;; treated as static fields (may only be set once). Dynamic templates
   ;; use ids to set values so you cannot dynamically set an id.
-  {:schelling-app-page (dtfn (tnodes "schelling-app.html" "hello") #{:id})})
+  {:schelling-app-page (dtfn (tnodes "schelling-app.html" "main") #{:id})})
 
 ;; Note: this file will not be reloaded automatically when it is changed.
