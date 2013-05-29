@@ -66,6 +66,12 @@
                           :schelling-state
                           [{msg/topic :schelling-state msg/type :step}])
 
+    ;run button
+    (events/send-on-click (dom/by-id "run")
+                          transmitter
+                          :schelling-state
+                          [{msg/topic :running? msg/type :toggle}])
+
     (events/send-on-click (dom/by-id "add-counter")
                           transmitter
                           :example-transform
@@ -100,10 +106,15 @@
     (doseq [x (range width)
             y (range height)
             :let [n (+ x (* y width))]]
-      ; (aset ctx "fillStyle" (rgb-str (nth neighborhood n)))
-      (aset ctx "fillStyle" (rgb-str (neighborhood [x y])))
+      (aset ctx "fillStyle" (rgb-str (nth neighborhood n)))
+      ; (aset ctx "fillStyle" (rgb-str (neighborhood [x y])))
       (.fillRect ctx x y 1 1))
     (.restore ctx)))
+
+(defn render-run-button-toggle [renderer [_ path _ new-value] transmitter]
+  (-> "run"
+      (dom/by-id)
+      (dom/set-text! (if new-value "Stop" "Run"))))
 
 ;; The data structure below is used to map rendering data to functions
 ;; which handle rendering for that specific change. This function is
@@ -125,7 +136,8 @@
    ;; All :value deltas for this path will be handled by the
    ;; function `render-message`.
    [:value [:io.pedestal.app/view-example-transform] render-message]
-   [:value [:io.pedestal.app/view-schelling-state] render-neighborhood]])
+   [:value [:io.pedestal.app/view-schelling-state] render-neighborhood]
+   [:value [:io.pedestal.app/view-running?] render-run-button-toggle]])
 
 ;; In render-config, paths can use wildcard keywords :* and :**. :*
 ;; means exactly one segment with any value. :** means 0 or more

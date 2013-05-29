@@ -31,10 +31,16 @@
     :step (s/step transform-state)
     transform-state))
 
+(defn running-transform [transform-state {value :value :as message}]
+  (condp = (msg/type message)
+    :toggle (not transform-state)
+    transform-state))
+
 (def example-app
   {:transform {:example-transform {:init "Hello World!" :fn (message-logger example-transform)}
                ; :schelling-state {:init "foo" :fn (message-logger schelling-transform)}}})
-               :schelling-state {:init "foo" :fn schelling-transform}}})
+               :schelling-state {:init nil :fn schelling-transform}
+               :running? {:init false :fn (message-logger running-transform)}}})
 
 
 ;; Once this behavior works, run the Data UI and record
