@@ -51,7 +51,7 @@
   (.log js/console (pr-str inputs)))
 
 (def example-app
-  {:transform {:schelling-state {:init nil :fn schelling-transform}
+  {:transform {:schelling-state {:init nil :fn (message-logger schelling-transform)}
                :running? {:init false :fn (message-logger running-transform)}}
    :combine {:continue-running? {:fn pass-through-combine :input #{:schelling-state}}
              :view-running? {:fn pass-through-combine :input #{:running?}}
