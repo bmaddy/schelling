@@ -39,14 +39,7 @@
     old-model))
 
 (defn stop-running-when-finished [input-name old-value new-value]
-  (.log js/console "seeing if we should stop...")
-  (.log js/console (pr-str (count (:unhappy old-value))))
-  (.log js/console (pr-str (count (:unhappy new-value))))
-  ; (when-not (= old-value new-value)
-  ;   [{msg/topic :schelling-state msg/type :step}]))
-  ;         ; [{msg/topic :schelling-state msg/type :s
   (when (empty? (:unhappy new-value))
-    (.log js/console "stopping.")
     [{msg/topic :running? msg/type :stop}]))
 
 (defn pass-through-combine [state input-name old-model new-model]
@@ -58,20 +51,12 @@
   (.log js/console (pr-str inputs)))
 
 (def example-app
-  {:transform {;:example-transform {:init "Hello World!" :fn (message-logger example-transform)}
-               ; :schelling-state {:init "foo" :fn (message-logger schelling-transform)}}})
-               ; :schelling-state {:init nil :fn (message-logger schelling-transform)}
-               :schelling-state {:init nil :fn schelling-transform}
-               :running? {:init false :fn (message-logger running-transform)}
-               }
-   ; :combine {:continue-running? {:fn (message-logger pass-through-combine) :input #{:schelling-state}}
+  {:transform {:schelling-state {:init nil :fn schelling-transform}
+               :running? {:init false :fn (message-logger running-transform)}}
    :combine {:continue-running? {:fn pass-through-combine :input #{:schelling-state}}
              :view-running? {:fn pass-through-combine :input #{:running?}}
              :view-schelling-state {:fn pass-through-combine :input #{:schelling-state}}}
-   ; :continue {:continue-running? (message-logger stop-running-when-finished)}
    :continue {:continue-running? stop-running-when-finished}
-   ; :emit {:output {:fn (message-logger pedestal/default-emitter-fn) :input #{:schelling-state}}}
-   ; :emit {:output {:fn (message-logger emit-fn) :input #{:schelling-state}}}
    })
 
 

@@ -133,7 +133,6 @@
       (dom/by-id)
       (dom/set-text! (if new-value "Stop" "Run")))
   (reset! running? new-value)
-  ; (p/put-message input-queue {msg/topic :schelling-state msg/type :step}))
   (trigger-step input-queue))
 
 ;; The data structure below is used to map rendering data to functions
