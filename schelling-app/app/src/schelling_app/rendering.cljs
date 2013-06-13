@@ -1,6 +1,7 @@
 (ns schelling-app.rendering
   (:require [domina :as dom]
             [io.pedestal.app.render.push :as render]
+            [io.pedestal.app.protocols :as p]
             [io.pedestal.app.render.events :as events]
             [io.pedestal.app.render.push.templates :as templates]
             [io.pedestal.app.messages :as msg]
@@ -50,9 +51,6 @@
                     (dom/by-id "setup")
                     transmitter
                     (fn []
-                      ; enable our buttons
-                      (dom/remove-class! (dom/by-id "step") "disabled")
-                      (dom/remove-class! (dom/by-id "run") "disabled")
                       (let [population (aget (dom/by-id "population") "value")
                             threshold (aget (dom/by-id "threshold") "value")]
                              (msg/fill :schelling-state
@@ -111,10 +109,32 @@
       (.fillRect ctx x y 1 1))
     (.restore ctx)))
 
-(defn render-run-button-toggle [renderer [_ path _ new-value] transmitter]
+(defn update-step-run-buttons [renderer [_ path _ new-value] transmitter]
+  (let [op (if (empty? (:unhappy new-value))
+             dom/add-class!
+             dom/remove-class!)]
+    (op (dom/by-id "step") "disabled")
+    (op (dom/by-id "run") "disabled")))
+
+(defn schelling-state-changed [& args]
+  (apply update-step-run-buttons args)
+  (apply render-neighborhood args))
+
+(def running? (atom nil))
+
+(defn trigger-step [input-queue]
+  (when @running?
+    (p/put-message input-queue {msg/topic :schelling-state msg/type :step})
+    (.setTimeout js/window #(trigger-step input-queue) 500)))
+
+(defn run-scenario [renderer [op path old-value new-value] input-queue]
+  (.log js/console (str "running? " new-value))
   (-> "run"
       (dom/by-id)
-      (dom/set-text! (if new-value "Stop" "Run"))))
+      (dom/set-text! (if new-value "Stop" "Run")))
+  (reset! running? new-value)
+  ; (p/put-message input-queue {msg/topic :schelling-state msg/type :step}))
+  (trigger-step input-queue))
 
 ;; The data structure below is used to map rendering data to functions
 ;; which handle rendering for that specific change. This function is
@@ -129,15 +149,16 @@
    ;; when we don't provide our own combines and emits. To name your
    ;; own nodes, create a custom combine or emit in the application's
    ;; behavior.
-   [:node-create  [:io.pedestal.app/view-example-transform] render-page]
+   ; [:node-create  [:io.pedestal.app/view-example-transform] render-page]
+   [:node-create  [:view-schelling-state] render-page]
    ;; All :node-destroy deltas for this path will be handled by the
    ;; library function `d/default-exit`.
    [:node-destroy   [:io.pedestal.app/view-example-transform] d/default-exit]
    ;; All :value deltas for this path will be handled by the
    ;; function `render-message`.
-   [:value [:io.pedestal.app/view-example-transform] render-message]
-   [:value [:io.pedestal.app/view-schelling-state] render-neighborhood]
-   [:value [:io.pedestal.app/view-running?] render-run-button-toggle]])
+   ; [:value [:io.pedestal.app/view-example-transform] render-message]
+   [:value [:view-schelling-state] schelling-state-changed]
+   [:value [:view-running?] run-scenario]])
 
 ;; In render-config, paths can use wildcard keywords :* and :**. :*
 ;; means exactly one segment with any value. :** means 0 or more

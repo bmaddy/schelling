@@ -3,29 +3,12 @@
 (defn vacancies [{:keys [width height population]}]
   (- (* width height) population))
 
-(defn setup [{:keys [population threshold]}]
-  {:pre [(<= population (* 50 50))]}
-  (let [n (/ population 2)
-        w 50
-        h 50
-        state {:population population
-               :threshold threshold
-               :width w
-               :height h}]
-    (assoc state :neighborhood ;(zipmap (for [x (range w)
-                               ;              y (range h)]
-                               ;          [x y])
-                                       (shuffle
-                                         (concat (repeat n 0)
-                                                 (repeat (- population n) 1)
-                                                 (repeat (vacancies state) nil))))))
-
 (defn coord->idx [w h [x y]]
   (let [x (mod x w)
         y (mod y h)]
     (+ (* y w) x)))
 
-(defn find-happiness-from-values [threshold subject & neighbors]
+(defn vacant-happy-or-unhappy? [threshold subject & neighbors]
   (if (nil? subject)
     :vacant
     (let [present-neighbors (remove nil? neighbors)
@@ -41,34 +24,46 @@
 ; (def neighbors (memoize neighbors))
 
 (defn find-happiness [{:keys [neighborhood threshold width height]} pos]
-  (apply find-happiness-from-values
+  (apply vacant-happy-or-unhappy?
          (/ threshold 100)
          (mapv (comp neighborhood (partial coord->idx width height))
                      (list* pos (neighbors pos)))))
 
+(defn find-unhappy-and-vacant-idxs [{:keys [width height] :as state}]
+  (if (and (:unhappy state) (:vacant state))
+    state
+    (let [positions (for [x (range width) y (range height)] [x y])
+          {:keys [unhappy vacant] :as states} (group-by (partial find-happiness state) positions)]
+      (.log js/console (pr-str (map #(update-in % [1] count) states)))
+      {:unhappy (map (partial coord->idx width height) unhappy)
+       :vacant (map (partial coord->idx width height) vacant)})))
+
+(defn setup [{:keys [population threshold]}]
+  {:pre [(<= population (* 50 50))]}
+  (let [n (/ population 2)
+        w 50
+        h 50
+        state {:population population
+               :threshold threshold
+               :width w
+               :height h}
+        state (assoc state :neighborhood (shuffle
+                                           (concat (repeat n 0)
+                                                   (repeat (- population n) 1)
+                                                   (repeat (vacancies state) nil))))]
+    (merge state (find-unhappy-and-vacant-idxs state))))
+
 (defn step [{:keys [neighborhood threshold width height] :as state}]
-  (let [positions (for [x (range width) y (range height)] [x y])
-        {:keys [happy unhappy vacant] :as states} (group-by (partial find-happiness state)
-                                                 positions)
-        unhappy-idxs (map (partial coord->idx width height) unhappy)
-        vacant-idxs (map (partial coord->idx width height) vacant)
-        ; unhappy-or-vacant (concat unhapy-idxs vacant-idxs)
-        destinations (shuffle (concat unhappy-idxs vacant-idxs))
-        updates (interleave destinations
-                            (concat (map neighborhood unhappy-idxs)
-                                    (repeat (count vacant) nil)))
+  (let [{:keys [unhappy vacant]} (find-unhappy-and-vacant-idxs state)
+        destinations (shuffle (concat unhappy vacant))
         updates (concat
-                  (interleave unhappy-idxs
+                  (interleave unhappy
                           (repeat nil))
-                  (interleave (take (count unhappy-idxs) destinations)
-                          (map neighborhood unhappy-idxs)))
+                  (interleave (take (count unhappy) destinations)
+                          (map neighborhood unhappy)))
         new-neighborhood (if (empty? updates)
                            neighborhood
-                           (apply assoc neighborhood updates))]
-    ; (.log js/console (pr-str (find-happiness state [0 0])))
-    ; (.log js/console (pr-str destinations))
-    (.log js/console (pr-str (map #(update-in % [1] count) states)))
-    ; (.log js/console (pr-str updates))
-    ; (.log js/console (pr-str [(count destinations) (count unhappy-idxs) (count vacant)]))
-    (assoc state :neighborhood new-neighborhood)))
+                           (apply assoc neighborhood updates))
+        new-state (assoc state :neighborhood new-neighborhood :unhappy nil :vacant nil)]
+    (merge new-state (find-unhappy-and-vacant-idxs new-state))))
 
