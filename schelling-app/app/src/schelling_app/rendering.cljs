@@ -105,35 +105,35 @@
             y (range height)
             :let [n (+ x (* y width))]]
       (aset ctx "fillStyle" (rgb-str (nth neighborhood n)))
-      ; (aset ctx "fillStyle" (rgb-str (neighborhood [x y])))
       (.fillRect ctx x y 1 1))
     (.restore ctx)))
 
-(defn update-step-run-buttons [renderer [_ path _ new-value] transmitter]
+(def running? (atom nil))
+
+(defn update-step-run-status [new-value]
   (let [op (if (empty? (:unhappy new-value))
              dom/add-class!
              dom/remove-class!)]
     (op (dom/by-id "step") "disabled")
     (op (dom/by-id "run") "disabled")))
 
-(defn schelling-state-changed [& args]
-  (apply update-step-run-buttons args)
-  (apply render-neighborhood args))
+(defn update-step-run-text []
+  (dom/set-text! (dom/by-id "run") (if @running? "Stop" "Run")))
 
-(def running? (atom nil))
-
-(defn trigger-step [input-queue]
+(defn trigger-step-if-running [input-queue]
   (when @running?
-    (p/put-message input-queue {msg/topic :schelling-state msg/type :step})
-    (.setTimeout js/window #(trigger-step input-queue) 500)))
+    (p/put-message input-queue {msg/topic :schelling-state msg/type :step})))
 
-(defn run-scenario [renderer [op path old-value new-value] input-queue]
-  (.log js/console (str "running? " new-value))
-  (-> "run"
-      (dom/by-id)
-      (dom/set-text! (if new-value "Stop" "Run")))
+(defn schelling-state-changed [& args]
+  (let [[_ [_ _ _ new-value] input-queue] args]
+    (update-step-run-status new-value)
+    (apply render-neighborhood args)
+    (trigger-step-if-running input-queue)))
+
+(defn running-changed [renderer [op path old-value new-value] input-queue]
   (reset! running? new-value)
-  (trigger-step input-queue))
+  (update-step-run-text)
+  (trigger-step-if-running input-queue))
 
 ;; The data structure below is used to map rendering data to functions
 ;; which handle rendering for that specific change. This function is
@@ -157,7 +157,7 @@
    ;; function `render-message`.
    ; [:value [:io.pedestal.app/view-example-transform] render-message]
    [:value [:view-schelling-state] schelling-state-changed]
-   [:value [:view-running?] run-scenario]])
+   [:value [:view-running?] running-changed]])
 
 ;; In render-config, paths can use wildcard keywords :* and :**. :*
 ;; means exactly one segment with any value. :** means 0 or more

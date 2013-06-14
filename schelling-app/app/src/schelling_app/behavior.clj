@@ -43,15 +43,10 @@
     [{msg/topic :running? msg/type :stop}]))
 
 (defn pass-through-combine [state input-name old-model new-model]
-  (.log js/console "hit combine")
   new-model)
 
-(defn emit-fn [inputs changed-inputs]
-  (.log js/console (pr-str inputs))
-  (.log js/console (pr-str inputs)))
-
 (def example-app
-  {:transform {:schelling-state {:init nil :fn (message-logger schelling-transform)}
+  {:transform {:schelling-state {:init nil :fn schelling-transform}
                :running? {:init false :fn (message-logger running-transform)}}
    :combine {:continue-running? {:fn pass-through-combine :input #{:schelling-state}}
              :view-running? {:fn pass-through-combine :input #{:running?}}

@@ -16,32 +16,40 @@
 (defn vacant-happy-or-unhappy? [threshold subject & neighbors]
   (if (nil? subject)
     :vacant
-    (let [present-neighbors (remove nil? neighbors)
-          similar (count (filter (partial = subject) neighbors))
-          different (- (count neighbors) similar)]
-      (if (<= threshold (/ similar different))
-        :happy
-        :unhappy))))
+    (let [present-neighbors (remove nil? neighbors)]
+      (loop [similar 0
+             different 0
+             [curr & neighbors] neighbors]
+        (if neighbors
+          (if (= subject curr)
+            (recur (inc similar) different neighbors)
+            (recur similar (inc different) neighbors))
+          (if (<= threshold (/ similar different))
+            :happy
+            :unhappy))))))
 
-(defn neighbors [width height idx]
+(defn idx->neighbors [width height idx]
   (let [[x y] (idx->coord width height idx)]
     (for [dx [-1 0 1] dy (if (zero? dx) [-1 1] [-1 0 1])]
       (coord->idx width height [(+ x dx) (+ y dy)]))))
-(def neighbors (memoize neighbors))
+
+(def neighbors
+  (memoize
+    (fn [width height]
+      (mapv #(vec (idx->neighbors width height %)) (range (* width height))))))
 
 (defn find-happiness [{:keys [neighborhood threshold width height]} idx]
-  (apply vacant-happy-or-unhappy?
-         (/ threshold 100)
-         (mapv neighborhood (list* idx (neighbors width height idx)))))
+  (let [neighbors-of (neighbors width height)]
+    (apply vacant-happy-or-unhappy?
+           (/ threshold 100)
+           (mapv neighborhood (list* idx (neighbors-of idx))))))
 
 (defn find-unhappy-and-vacant-idxs [{:keys [width height] :as state}]
   (if (and (:unhappy state) (:vacant state))
-    state
-    (let [indexes (range (* width height))
-          {:keys [unhappy vacant] :as states} (group-by (partial find-happiness state) indexes)]
+    state ; return if this has already been calculated
+    (let [states (group-by (partial find-happiness state) (vec (range (* width height))))]
       (.log js/console (pr-str (map #(update-in % [1] count) states)))
-      {:unhappy unhappy
-       :vacant vacant})))
+      states)))
 
 (defn setup [{:keys [population threshold]}]
   {:pre [(<= population (* 50 50))]}
@@ -59,7 +67,7 @@
     (merge state (find-unhappy-and-vacant-idxs state))))
 
 (defn step [{:keys [neighborhood threshold width height] :as state}]
-  (.profile js/console "step")
+  ; (.profile js/console "step")
   (let [{:keys [unhappy vacant]} (find-unhappy-and-vacant-idxs state)
         destinations (shuffle (concat unhappy vacant))
         updates (concat
@@ -72,6 +80,6 @@
                            (apply assoc neighborhood updates))
         new-state (assoc state :neighborhood new-neighborhood :unhappy nil :vacant nil)
         new-state (merge new-state (find-unhappy-and-vacant-idxs new-state))]
-    (.profileEnd js/console)
+    ; (.profileEnd js/console)
     new-state))
 
